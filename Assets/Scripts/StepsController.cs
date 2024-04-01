@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,6 +10,7 @@ public class StepsController : MonoBehaviour
     public int Step = 0;
     private int x1, y1, x2, y2;
     [SerializeField] private CreateField createField;
+    [SerializeField] private WinChecker winChecker;
 
     void Start()
     {
@@ -35,6 +37,7 @@ public class StepsController : MonoBehaviour
             ChangeSprite(1);
             createField.BigField[y1, x1].field[y2, x2].state = 2;
         }
+        winChecker.CheckMiniWin(x1, y1);
         CloseCells();
         OpenCells();
         Step++;
@@ -66,6 +69,29 @@ public class StepsController : MonoBehaviour
                     if (createField.BigField[y2, x2].field[i, j].state == 0)
                     {
                         createField.BigField[y2, x2].field[i, j].obj.GetComponent<Button>().interactable = true;
+                    }
+                }
+            }
+        }
+        else
+        {
+            OpenAllCells();
+        }
+    }
+    private void OpenAllCells()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                for (int k = 0; k < 3; k++)
+                {
+                    for (int l = 0; l < 3; l++)
+                    {
+                        if (createField.BigField[i, j].field[k, l].state == 0)
+                        {
+                            createField.BigField[i, j].field[k, l].obj.GetComponent<Button>().interactable = true;
+                        }
                     }
                 }
             }

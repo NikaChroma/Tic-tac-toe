@@ -8,39 +8,159 @@ using UnityEngine.UI;
 public class StepsController : MonoBehaviour
 {
     public int Step = 0;
-    private int x1, y1, x2, y2;
     [SerializeField] private CreateField createField;
     [SerializeField] private WinChecker winChecker;
-
-    void Start()
+    [SerializeField] private MonteCarloAI MCAI;
+    public class Move
     {
-
+        public int x1, y1, x2, y2;
     }
-
-    void Update()
+    public void StepProcessing(int y1, int x1, int y2, int x2)
     {
-
-    }
-    public void StepProcessing(int a, int b, int c, int d)
-    {
-        y1 = a;
-        x1 = b;
-        y2 = c;
-        x2 = d;
         if (Step % 2 == 0)
         {
-            ChangeSprite(0);
+            createField.BigField[y1, x1].field[y2, x2].obj.GetComponent<CellScript>().ChangeSprite(0);
             createField.BigField[y1, x1].field[y2, x2].state = 1;
+            CheckCells(y2, x2, 0);
         }
         else
         {
-            ChangeSprite(1);
+            createField.BigField[y1, x1].field[y2, x2].obj.GetComponent<CellScript>().ChangeSprite(1);
             createField.BigField[y1, x1].field[y2, x2].state = 2;
+            CloseCells();
+            CheckCells(y2, x2, 0);
+            OpenCells();
         }
-        winChecker.CheckMiniWin(x1, y1);
-        CloseCells();
-        OpenCells();
+        int[,] field = new int[3,3];
+        for(int i = 0; i < 3; i++)
+        {
+            for(int j = 0; j < 3; j++)
+            {
+                field[i, j] = createField.BigField[y1, x1].field[i, j].state;
+            }
+        }
+        createField.BigField[y1, x1].state = winChecker.CheckMiniWin(field);
+        if (createField.BigField[y1, x1].state != 0)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    field[i, j] = createField.BigField[i, j].state;
+                }
+            }
+            createField.Result = winChecker.CheckBigWin(field);
+        }
         Step++;
+        if(Step % 2 == 1) ComputerStep();
+    }
+    private void ComputerStep()
+    {
+        CloseCells();
+        Move move = MCAI.GetBestMove(1);
+        StepProcessing(move.y1, move.x1, move.y2, move.x2);
+
+    } 
+    public void SimStepProcessing(int y1, int x1, int y2, int x2, int simStep)
+    {
+        if ((simStep + Step) % 2 == 0)
+        {
+            createField.SimulationField[y1, x1].field[y2, x2].state = 1;
+        }
+        else
+        {
+            createField.SimulationField[y1, x1].field[y2, x2].state = 2;
+        }
+        int[,] field = new int[3, 3];
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                field[i, j] = createField.SimulationField[y1, x1].field[i, j].state;
+            }
+        }
+        createField.SimulationField[y1, x1].state = winChecker.CheckMiniWin(field);
+        if(createField.SimulationField[y1, x1].state != 0)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    field[i, j] = createField.SimulationField[i, j].state;
+                }
+            }
+            createField.SimResult = winChecker.CheckBigWin(field);
+        }
+        
+        CheckCells(y2, x2, 1);
+    }
+    public List<Move> legalMoves = new List<Move>();
+    public List<Move> legalMovesCopy = new List<Move>();
+    private void CheckCells(int a, int b, int state)
+    {
+        var field = createField.BigField;
+        var list = legalMoves;
+        if (state == 1)
+        {
+            list = legalMovesCopy;
+            field = createField.SimulationField;
+        }
+        list.Clear();
+        if (field[a, b].state == 0)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (field[a, b].field[i, j].state == 0)
+                    {
+                        Move move = new Move();
+                        move.y1 = a;
+                        move.x1 = b;
+                        move.y2 = i;
+                        move.x2 = j;
+                        list.Add(move);
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if(field[i, j].state == 0) {
+                        for (int k = 0; k < 3; k++)
+                        {
+                            for (int l = 0; l < 3; l++)
+                            {
+                                if (field[i, j].field[k, l].state == 0)
+                                {
+                                    Move move = new Move();
+                                    move.y1 = i;
+                                    move.x1 = j;
+                                    move.y2 = k;
+                                    move.x2 = l;
+                                    list.Add(move);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        foreach (Move move in legalMoves)
+        {
+            //Debug.Log(move.y1 + " " + move.x1 + " " + move.y2 + " " + move.x2);
+        }
+    }
+    private void OpenCells()
+    {
+        foreach(Move move in legalMoves)
+        {
+            createField.BigField[move.y1, move.x1].field[move.y2, move.x2].obj.GetComponent<Button>().interactable = true;
+        }
     }
     private void CloseCells()
     {
@@ -58,49 +178,4 @@ public class StepsController : MonoBehaviour
             }
         }
     }
-    private void OpenCells()
-    {
-        if(createField.BigField[y2, x2].state == 0)
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                for (int j = 0; j < 3; j++)
-                {
-                    if (createField.BigField[y2, x2].field[i, j].state == 0)
-                    {
-                        createField.BigField[y2, x2].field[i, j].obj.GetComponent<Button>().interactable = true;
-                    }
-                }
-            }
-        }
-        else
-        {
-            OpenAllCells();
-        }
-    }
-    private void OpenAllCells()
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-            {
-                for (int k = 0; k < 3; k++)
-                {
-                    for (int l = 0; l < 3; l++)
-                    {
-                        if (createField.BigField[i, j].field[k, l].state == 0)
-                        {
-                            createField.BigField[i, j].field[k, l].obj.GetComponent<Button>().interactable = true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    private void ChangeSprite(int n)
-    {
-        createField.BigField[y1, x1].field[y2, x2].obj.GetComponent<CellScript>().ChangeSprite(n);
-
-    }
 }
- 

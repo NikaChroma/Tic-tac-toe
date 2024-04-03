@@ -20,7 +20,9 @@ public class CreateField : MonoBehaviour
         public cell[,] field = new cell[3,3];
         public int state = 0;
     }
-    public MiniField[,] BigField = new MiniField[3, 3]; 
+    public MiniField[,] BigField = new MiniField[3, 3];
+    public MiniField[,] SimulationField = new MiniField[3, 3];
+    public int Result = 0, SimResult;
 
     [SerializeField] private GameObject CellPrefab;
     [SerializeField] private Transform parentTransform;
@@ -32,11 +34,13 @@ public class CreateField : MonoBehaviour
             for(int j = 0; j < 3; j++)
             {
                 BigField[i, j] = new MiniField();
+                SimulationField[i,j] = new MiniField();
                 for (int k = 0; k < 3; k++)
                 {
                     for(int  l = 0; l < 3; l++)
                     {
                         BigField[i, j].field[k, l] = new cell();
+                        SimulationField[i, j].field[k, l] = new cell();
                         GameObject NewCell = Instantiate(CellPrefab, canvas.transform);
                         RectTransform rectTransform = NewCell.GetComponent<RectTransform>();
                         rectTransform.anchoredPosition = new Vector2(80 * l + 270 * j - 350, 80 * k + 270 * i - 350);

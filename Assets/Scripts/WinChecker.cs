@@ -5,41 +5,88 @@ using UnityEngine;
 public class WinChecker : MonoBehaviour
 {
     [SerializeField] private CreateField createField;
-    public void CheckMiniWin(int x, int y)
+    public int CheckMiniWin(int[,] curField)
     {
-        var curField = createField.BigField[y, x];
-        curField.state = 3; //draw
+
+        int sumX = 0;
+        int res = 1;
         for (int i = 0; i < 3; i++)
         {
             for (int j = 0; j < 3; j++)
             {
-                if(curField.field[i, j].state == 0)
+                if (curField[i, j] == 0)
                 {
-                    curField.state = 0; // not draw
+                    res = 0; // not draw
+                }
+                else if (curField[i, j] == 1)
+                {
+                    sumX++;
                 }
             }
+        }
+        if (res == 1)
+        {
+            if (sumX >= 5)
+            {
+                res = 1;
+            }
+            else
+            {
+                res = 2;
+            }
+        }
+        else
+        {
+            res = 0;
         }
         for (int i = 0; i < 3; i++)
         {
-            if ((curField.field[i, 0].state != 0 && curField.field[i, 0].state == curField.field[i, 1].state && curField.field[i, 0].state == curField.field[i, 2].state) || (curField.field[0, i].state != 0 && curField.field[0, i].state == curField.field[1, i].state && curField.field[0, i].state == curField.field[2, i].state))
+            if (curField[i, 0] != 0 && curField[i, 0] != 3 && curField[i, 0] == curField[i, 1] && curField[i, 0] == curField[i, 2])
             {
-                curField.state = curField.field[i, 0].state;
+                res = curField[i, 0];
+            }
+            if (curField[0, i] != 0 && curField[0, i] != 3 && curField[0, i] == curField[1, i] && curField[0, i] == curField[2, i])
+            {
+                res = curField[0, i];
             }
         }
-        if ((curField.field[0, 0].state != 0 && curField.field[1, 1].state == curField.field[0, 0].state && curField.field[0, 0].state == curField.field[2, 2].state) || (curField.field[2, 0].state != 0 && curField.field[1, 1].state == curField.field[2, 0].state && curField.field[2, 0].state == curField.field[0, 2].state))
+        if ((curField[0, 0] != 0 && curField[0, 0] != 3 && curField[1, 1] == curField[0, 0] && curField[0, 0] == curField[2, 2]) || (curField[2, 0] != 0 && curField[2, 0] != 3 && curField[1, 1] == curField[2, 0] && curField[2, 0] == curField[0, 2]))
         {
-            curField.state = curField.field[1, 1].state;
+            res = curField[1, 1];
         }
-        if(curField.state != 0)
+        return res;
+
+    }
+    public int CheckBigWin(int[,] curField)
+    {
+        int result;
+        result = 3; //draw
+        for (int i = 0; i < 3; i++)
         {
-            for(int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
             {
-                for(int j = 0; j < 3; j++)
+                if (curField[i, j] == 0)
                 {
-                    if (curField.field[i, j].state == 0) curField.field[i, j].state = 3;
+                    result = 0; // not draw
                 }
-            } 
+            }
         }
 
+        for (int i = 0; i < 3; i++)
+        {
+            if (curField[i, 0] != 0 && curField[i, 0] == curField[i, 1] && curField[i, 0] == curField[i, 2])
+            {
+                result = curField[i, 0];
+            }
+            if (curField[0, i] != 0 && curField[0, i] == curField[1, i] && curField[0, i] == curField[2, i])
+            {
+                result = curField[0, i];
+            }
+        }
+        if ((curField[0, 0] != 0 && curField[1, 1] == curField[0, 0] && curField[0, 0] == curField[2, 2]) || (curField[2, 0] != 0 && curField[1, 1] == curField[2, 0] && curField[2, 0] == curField[0, 2]))
+        {
+            result = curField[1, 1];
+        }
+        return result;
     }
 }

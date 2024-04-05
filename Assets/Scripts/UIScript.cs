@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class UIScript : MonoBehaviour
 {
@@ -28,10 +29,7 @@ public class UIScript : MonoBehaviour
     }
     private void CheckWin()
     {
-        if (createField.Result == 0)
-        {
-
-        }
+        
         if (createField.Result == 1)
         {
             resultPanel.SetActive(true);
@@ -47,5 +45,14 @@ public class UIScript : MonoBehaviour
             drawPanel.SetActive(true);
             currentPlayer.sprite = sprites[2];
         }
+        if (createField.Result != 0)
+        {
+            StartCoroutine(Restart());
+        }
+    }
+    private IEnumerator Restart()
+    {
+        yield return new WaitForSeconds(5);
+        SceneManager.LoadScene(0);
     }
 }

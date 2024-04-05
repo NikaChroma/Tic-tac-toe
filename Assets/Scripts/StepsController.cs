@@ -150,10 +150,6 @@ public class StepsController : MonoBehaviour
                 }
             }
         }
-        foreach (Move move in legalMoves)
-        {
-            //Debug.Log(move.y1 + " " + move.x1 + " " + move.y2 + " " + move.x2);
-        }
     }
     private void OpenCells()
     {

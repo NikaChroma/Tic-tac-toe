@@ -29,7 +29,6 @@ public class MonteCarloAI : MonoBehaviour
                 bestMove = move;
             }
         }
-        //Debug.Log(bestSum);
         return bestMove;
     }
     private int SimulateGame(int player)
@@ -45,11 +44,9 @@ public class MonteCarloAI : MonoBehaviour
         while (field.SimResult == 0)
         {
             Move randomMove = controller.legalMovesCopy[Random.Range(0, controller.legalMovesCopy.Count)];
-            //if(step == 0) Debug.Log(randomMove.y1 + " " + randomMove.x1 + " " + randomMove.y2 + " " + randomMove.x2);
             controller.SimStepProcessing(randomMove.y1, randomMove.x1, randomMove.y2, randomMove.x2, step);
             step++;
         }
-        //Debug.Log(step);
         if (field.SimResult == player + 1)
         {
             return 1;

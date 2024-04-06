@@ -21,15 +21,11 @@ public class StepsController : MonoBehaviour
         {
             createField.BigField[y1, x1].field[y2, x2].obj.GetComponent<CellScript>().ChangeSprite(0);
             createField.BigField[y1, x1].field[y2, x2].state = 1;
-            CheckCells(y2, x2, 0);
         }
         else
         {
             createField.BigField[y1, x1].field[y2, x2].obj.GetComponent<CellScript>().ChangeSprite(1);
             createField.BigField[y1, x1].field[y2, x2].state = 2;
-            CloseCells();
-            CheckCells(y2, x2, 0);
-            OpenCells();
         }
         int[,] field = new int[3,3];
         for(int i = 0; i < 3; i++)
@@ -51,8 +47,11 @@ public class StepsController : MonoBehaviour
             }
             createField.Result = winChecker.CheckBigWin(field);
         }
+        CloseCells();
+        CheckCells(y2, x2, 0);
+        OpenCells();
         Step++;
-        if(Step % 2 == 1) ComputerStep();
+        if(Step % 2 == 1 && createField.Result == 0) ComputerStep();
     }
     private void ComputerStep()
     {
@@ -156,6 +155,10 @@ public class StepsController : MonoBehaviour
         foreach(Move move in legalMoves)
         {
             createField.BigField[move.y1, move.x1].field[move.y2, move.x2].obj.GetComponent<Button>().interactable = true;
+        }
+        if (createField.Result != 0)
+        {
+            CloseCells();
         }
     }
     private void CloseCells()

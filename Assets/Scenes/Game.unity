@@ -894,6 +894,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   field: {fileID: 433574458}
   controller: {fileID: 1635190579}
+  winChecker: {fileID: 1635190582}
 --- !u!1 &1688626858
 GameObject:
   m_ObjectHideFlags: 0

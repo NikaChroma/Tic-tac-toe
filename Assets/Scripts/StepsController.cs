@@ -11,9 +11,25 @@ public class StepsController : MonoBehaviour
     [SerializeField] private CreateField createField;
     [SerializeField] private WinChecker winChecker;
     [SerializeField] private MonteCarloAI MCAI;
+    private int gameState;
     public class Move
     {
         public int x1, y1, x2, y2;
+    }
+    private void Start()
+    {
+        gameState = 1;
+    }
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            gameState = 0;
+        }
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            gameState = 1;
+        }
     }
     public void StepProcessing(int y1, int x1, int y2, int x2)
     {
@@ -51,7 +67,7 @@ public class StepsController : MonoBehaviour
         CheckCells(y2, x2, 0);
         OpenCells();
         Step++;
-        if(Step % 2 == 1 && createField.Result == 0) ComputerStep();
+        if(Step % 2 == 1 && createField.Result == 0 && gameState == 1) ComputerStep();
     }
     private void ComputerStep()
     {

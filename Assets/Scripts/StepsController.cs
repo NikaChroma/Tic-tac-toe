@@ -7,18 +7,22 @@ using UnityEngine.UI;
 
 public class StepsController : MonoBehaviour
 {
-    public int Step = 0;
+    public int Step { get; private set; } = 0;
     [SerializeField] private CreateField createField;
     [SerializeField] private WinChecker winChecker;
     [SerializeField] private MonteCarloAI MCAI;
-    private int gameState;
-    public class Move
+    private int gameState = 1;
+    public struct Move
     {
         public int x1, y1, x2, y2;
-    }
-    private void Start()
-    {
-        gameState = 1;
+
+        public Move(int x1, int y1, int x2, int y2)
+        {
+            this.x1 = x1;
+            this.y1 = y1;
+            this.x2 = x2;
+            this.y2 = y2;
+        }
     }
     private void Update()
     {
@@ -33,41 +37,56 @@ public class StepsController : MonoBehaviour
     }
     public void StepProcessing(int y1, int x1, int y2, int x2)
     {
-        if (Step % 2 == 0)
-        {
-            createField.BigField[y1, x1].field[y2, x2].obj.GetComponent<CellScript>().ChangeSprite(0);
-            createField.BigField[y1, x1].field[y2, x2].state = 1;
-        }
-        else
-        {
-            createField.BigField[y1, x1].field[y2, x2].obj.GetComponent<CellScript>().ChangeSprite(1);
-            createField.BigField[y1, x1].field[y2, x2].state = 2;
-        }
-        int[,] field = new int[3,3];
-        for(int i = 0; i < 3; i++)
-        {
-            for(int j = 0; j < 3; j++)
-            {
-                field[i, j] = createField.BigField[y1, x1].field[i, j].state;
-            }
-        }
+        int currentPlayer = Step % 2;
+
+        UpdateField(y1, x1, y2, x2, currentPlayer);
+
+        int[,] field = ExtractMiniFieldState(y1, x1);
         createField.BigField[y1, x1].state = winChecker.CheckMiniWin(field);
+
         if (createField.BigField[y1, x1].state != 0)
         {
-            for (int i = 0; i < 3; i++)
-            {
-                for (int j = 0; j < 3; j++)
-                {
-                    field[i, j] = createField.BigField[i, j].state;
-                }
-            }
+            field = ExtractBigFieldState();
             createField.Result = winChecker.CheckBigWin(field);
         }
+
         CloseCells();
         CheckCells(y2, x2, 0);
         OpenCells();
         Step++;
-        if(Step % 2 == 1 && createField.Result == 0 && gameState == 1) ComputerStep();
+        if (Step % 2 == 1 && createField.Result == 0 && gameState == 1) ComputerStep();
+    }
+    private void UpdateField(int y1, int x1, int y2, int x2, int currentPlayer)
+    {
+        var cell = createField.BigField[y1, x1].field[y2, x2];
+        var cellScript = cell.obj.GetComponent<CellScript>();
+        cellScript.ChangeSprite(currentPlayer);
+        cell.state = currentPlayer + 1;
+    }
+    private int[,] ExtractMiniFieldState(int y, int x)
+    {
+        int[,] field = new int[3, 3];
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                field[i, j] = createField.BigField[y, x].field[i, j].state;
+            }
+        }
+        return field;
+    }
+
+    private int[,] ExtractBigFieldState()
+    {
+        int[,] field = new int[3, 3];
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                field[i, j] = createField.BigField[i, j].state;
+            }
+        }
+        return field;
     }
     private void ComputerStep()
     {
@@ -78,14 +97,9 @@ public class StepsController : MonoBehaviour
     } 
     public void SimStepProcessing(int y1, int x1, int y2, int x2, int simStep)
     {
-        if ((simStep + Step) % 2 == 0)
-        {
-            createField.SimulationField[y1, x1].field[y2, x2].state = 1;
-        }
-        else
-        {
-            createField.SimulationField[y1, x1].field[y2, x2].state = 2;
-        }
+        int currentPlayer = (Step + simStep) % 2;
+        createField.SimulationField[y1, x1].field[y2, x2].state = currentPlayer + 1;
+        
         int[,] field = new int[3, 3];
         for (int i = 0; i < 3; i++)
         {

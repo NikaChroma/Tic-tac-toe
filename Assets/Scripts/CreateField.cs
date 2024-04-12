@@ -10,21 +10,21 @@ public class CreateField : MonoBehaviour
         canvas = FindObjectOfType<Canvas>();
         Create();
     }
-    public class cell
+    public class Cell
     {
         public int state = 0;
         public GameObject obj;
     }
     public class MiniField
     {
-        public cell[,] field = new cell[3,3];
+        public Cell[,] field = new Cell[3,3];
         public int state = 0;
     }
     public MiniField[,] BigField = new MiniField[3, 3];
     public MiniField[,] SimulationField = new MiniField[3, 3];
     public int Result = 0, SimResult;
 
-    [SerializeField] private GameObject CellPrefab;
+    [SerializeField] private GameObject cellPrefab;
     [SerializeField] private Transform parentTransform;
     Canvas canvas;
     private void Create()
@@ -39,9 +39,9 @@ public class CreateField : MonoBehaviour
                 {
                     for(int  l = 0; l < 3; l++)
                     {
-                        BigField[i, j].field[k, l] = new cell();
-                        SimulationField[i, j].field[k, l] = new cell();
-                        GameObject NewCell = Instantiate(CellPrefab, canvas.transform);
+                        BigField[i, j].field[k, l] = new Cell();
+                        SimulationField[i, j].field[k, l] = new Cell();
+                        GameObject NewCell = Instantiate(cellPrefab, canvas.transform);
                         RectTransform rectTransform = NewCell.GetComponent<RectTransform>();
                         rectTransform.anchoredPosition = new Vector2(80 * l + 270 * j - 350, 80 * k + 270 * i - 350);
                         NewCell.transform.SetParent(parentTransform);

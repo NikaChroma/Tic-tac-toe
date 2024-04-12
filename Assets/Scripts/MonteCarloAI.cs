@@ -11,65 +11,46 @@ public class MonteCarloAI : MonoBehaviour
     [SerializeField] private CreateField field;
     [SerializeField] private StepsController controller;
     [SerializeField] private WinChecker winChecker;
+    private int player;
     private int simulationsPerMove = 2000;
-    public StepsController.Move GetBestMove(int player)
+    public StepsController.Move GetBestMove(int p)
     {
         StepsController.Move bestMove = new();
-        int bestSum = 0;
+        player = p;
         if (GetBetterFieldsOnField().Count > 0 && controller.Step > 20)
         {
             List<Move> betterFields = GetBetterFieldsOnField();
-            foreach (Move move in betterFields)
-            {
-                CopyField();
-                int sum = 0;
-                for (int i = 0; i < simulationsPerMove; i++)
-                {
-                    sum += SimulateGame(player);
-                }
-                if (sum > bestSum)
-                {
-                    bestSum = sum;
-                    bestMove = move;
-                }
-            }
+             bestMove = StartSimulations(betterFields);
         }
         else if (GetBestStepsOnField().Count > 0)
         {
             List<Move> betterFields = GetBestStepsOnField();
-            foreach (Move move in betterFields)
-            {
-                CopyField();
-                int sum = 0;
-                for (int i = 0; i < simulationsPerMove; i++)
-                {
-                    sum += SimulateGame(player);
-                }
-                if (sum > bestSum)
-                {
-                    bestSum = sum;
-                    bestMove = move;
-                }
-            }
+            bestMove = StartSimulations(betterFields);
         }
         else
         {
-            foreach (Move move in controller.legalMoves)
+            bestMove = StartSimulations(controller.legalMoves);
+        }
+        return bestMove;
+    }
+    private StepsController.Move StartSimulations(List<Move> moves)
+    {
+        StepsController.Move bestMove = new();
+        int bestSum = 0;
+        foreach (Move move in moves)
+        {
+            CopyField();
+            int sum = 0;
+            for (int i = 0; i < simulationsPerMove; i++)
             {
-                CopyField();
-                int sum = 0;
-                for (int i = 0; i < simulationsPerMove; i++)
-                {
-                    sum += SimulateGame(player);
-                }
-                if (sum > bestSum)
-                {
-                    bestSum = sum;
-                    bestMove = move;
-                }
+                sum += SimulateGame(player);
+            }
+            if (sum > bestSum)
+            {
+                bestSum = sum;
+                bestMove = move;
             }
         }
-        Debug.Log(bestMove.y1 + " " + bestMove.x1 + " " + bestMove.y2 + " " + bestMove.x2);
         return bestMove;
     }
     private int SimulateGame(int player)
@@ -262,7 +243,6 @@ public class MonteCarloAI : MonoBehaviour
     }
     private bool HasAvailableCornerMove()
     {
-        // ѕровер€ем, есть ли доступные угловые ходы
         foreach (Move move in controller.legalMovesCopy)
         {
             if ((move.x2 == 0 || move.x2 == 2) && (move.y2 == 0 || move.y2 == 2))
@@ -274,7 +254,6 @@ public class MonteCarloAI : MonoBehaviour
     }
     private List<Move> GetCornerMoves()
     {
-        // ѕолучаем список всех доступных угловых ходов
         List<Move> cornerMoves = new List<Move>();
         foreach (Move move in controller.legalMovesCopy)
         {

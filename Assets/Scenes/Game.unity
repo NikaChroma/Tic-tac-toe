@@ -241,7 +241,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Result: 0
   SimResult: 0
-  CellPrefab: {fileID: 9101099070045185604, guid: 09aac1834dfab234787561717264d556, type: 3}
+  cellPrefab: {fileID: 9101099070045185604, guid: 09aac1834dfab234787561717264d556, type: 3}
   parentTransform: {fileID: 433574457}
 --- !u!1 &519420028
 GameObject:
@@ -834,7 +834,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9455725e024ae604dbfe7553f7012e09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Step: 0
   createField: {fileID: 433574458}
   winChecker: {fileID: 1635190582}
   MCAI: {fileID: 1635190583}

@@ -10,12 +10,11 @@ public class StepsController : MonoBehaviour
     public int Step { get; private set; } = 0;
     [SerializeField] private CreateField createField;
     [SerializeField] private WinChecker winChecker;
-    [SerializeField] private MonteCarloAI MCAI;
+    [SerializeField] private MonteCarloTreeSearch MCAI;
     private int gameState = 1;
     public struct Move
     {
         public int x1, y1, x2, y2;
-
         public Move(int x1, int y1, int x2, int y2)
         {
             this.x1 = x1;
@@ -54,14 +53,14 @@ public class StepsController : MonoBehaviour
         CheckCells(y2, x2, 0);
         OpenCells();
         Step++;
-        if (Step % 2 == 1 && createField.Result == 0 && gameState == 1) ComputerStep();
+        if (Step % 2 == 1 && createField.Result == 0 && gameState == 1) ComputerStep(new Move(x1, y1, x2, y2));
     }
     private void UpdateField(int y1, int x1, int y2, int x2, int currentPlayer)
     {
-        var cell = createField.BigField[y1, x1].field[y2, x2];
-        var cellScript = cell.obj.GetComponent<CellScript>();
+        var cellScript = createField.BigField[y1, x1].field[y2, x2].obj.GetComponent<CellScript>();
         cellScript.ChangeSprite(currentPlayer);
-        cell.state = currentPlayer + 1;
+        createField.BigField[y1, x1].field[y2, x2].state = currentPlayer + 1;
+        //Debug.Log(createField.BigField[y1, x1].field[y2, x2].state);
     }
     private int[,] ExtractMiniFieldState(int y, int x)
     {
@@ -88,10 +87,10 @@ public class StepsController : MonoBehaviour
         }
         return field;
     }
-    private void ComputerStep()
+    private void ComputerStep(Move lastMove)
     {
         CloseCells();
-        Move move = MCAI.GetBestMove(1);
+        Move move = MCAI.GetBestMove(lastMove, 1);
         StepProcessing(move.y1, move.x1, move.y2, move.x2);
 
     } 
@@ -125,7 +124,7 @@ public class StepsController : MonoBehaviour
     }
     public List<Move> legalMoves = new List<Move>();
     public List<Move> legalMovesCopy = new List<Move>();
-    private void CheckCells(int a, int b, int state)
+    public void CheckCells(int a, int b, int state)
     {
         var field = createField.BigField;
         var list = legalMoves;

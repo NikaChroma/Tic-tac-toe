@@ -10,15 +10,25 @@ public class CreateField : MonoBehaviour
         canvas = FindObjectOfType<Canvas>();
         Create();
     }
-    public class Cell
+    public struct Cell
     {
-        public int state = 0;
+        public int state;
         public GameObject obj;
+        public Cell(int state, GameObject obj)
+        {
+            this.state = state;
+            this.obj = obj;
+        }
     }
-    public class MiniField
+    public struct MiniField
     {
-        public Cell[,] field = new Cell[3,3];
-        public int state = 0;
+        public Cell[,] field;
+        public int state;
+        public MiniField(Cell[,] field, int state)
+        {
+            this .field = field;
+            this.state = state;
+        }
     }
     public MiniField[,] BigField = new MiniField[3, 3];
     public MiniField[,] SimulationField = new MiniField[3, 3];
@@ -33,19 +43,18 @@ public class CreateField : MonoBehaviour
         {
             for(int j = 0; j < 3; j++)
             {
-                BigField[i, j] = new MiniField();
-                SimulationField[i,j] = new MiniField();
+                BigField[i, j] = new MiniField(new Cell[3,3], 0);
+                SimulationField[i,j] = new MiniField(new Cell[3, 3], 0);
                 for (int k = 0; k < 3; k++)
                 {
                     for(int  l = 0; l < 3; l++)
                     {
-                        BigField[i, j].field[k, l] = new Cell();
-                        SimulationField[i, j].field[k, l] = new Cell();
+                        SimulationField[i, j].field[k, l] = new Cell(0, null);
                         GameObject NewCell = Instantiate(cellPrefab, canvas.transform);
                         RectTransform rectTransform = NewCell.GetComponent<RectTransform>();
                         rectTransform.anchoredPosition = new Vector2(80 * l + 270 * j - 350, 80 * k + 270 * i - 350);
                         NewCell.transform.SetParent(parentTransform);
-                        BigField[i, j].field[k, l].obj = NewCell;
+                        BigField[i, j].field[k, l] = new Cell(0, NewCell);
                     }
                 }
             }

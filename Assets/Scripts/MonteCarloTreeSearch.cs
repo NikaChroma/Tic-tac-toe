@@ -5,7 +5,6 @@ using System.Linq;
 using UnityEngine;
 using static StepsController;
 using static CreateField;
-using UnityEditor.Experimental.GraphView;
 
 public class MonteCarloTreeSearch : MonoBehaviour
 {
@@ -16,113 +15,63 @@ public class MonteCarloTreeSearch : MonoBehaviour
 
     public Move GetBestMove(Move move, int player)
     {
-        //Debug.Log("Начат поиск лучшего");
-        TreeNode rootNode = new TreeNode(null, move, player, field.BigField);
+        float startTime = Time.time;
+        MiniField[,] root = field.BigField; 
+        TreeNode rootNode = new TreeNode(null, move, player, root);
         int n = 0;
-        int wins = 0;
-        while (n < 100000)
+        while (startTime - Time.time < 5 && n < 100)
         {
             n++;
-            TreeNode node = SelectNode(rootNode);
-            ExpandNode(node);
-            int result = SimulateGame(node);
-            Backpropagate(node, result);
-            if (result == 1) wins++;
+            TreeNode node = Selection(rootNode);
+            Expansion(node);
+            int result = Simulation(node);
+            Backpropagation(node, result);
         }
-        Debug.Log("Вероятность победы " + wins/n + "%");
+
         return GetBestChild(rootNode).move;
     }
+    private TreeNode Selection(TreeNode node) {
 
-    private TreeNode SelectNode(TreeNode node)
-    {
-        //Debug.Log("Выбрана нода");
-        TreeNode selectedNode = node;
-        while (selectedNode.children.Count > 0)
+        while (node.children.Count > 0)
         {
-            //Debug.Log("Дети - " + selectedNode.children.Count);
-            selectedNode = UCBSelect(selectedNode);
-        }
-        return selectedNode;
-    }
-
-    private TreeNode UCBSelect(TreeNode node)
-    {
-        double bestUCBValue = 0;
-        TreeNode bestChild = node.children[0];
-        foreach (TreeNode child in node.children)
-        {
-            if(child.visits == 0) child.visits = 1;
-            //Debug.Log(child.move.y1 + " " + child.move.x1 + " " + child.move.y2 + " " + child.move.x2);
-            double UCBValue = (child.wins / (double)child.visits) + Math.Sqrt(2 * Math.Log(node.visits) / child.visits);
-            if (UCBValue > bestUCBValue)
+            node = node.children[0];
+            foreach (TreeNode child in node.children)
             {
-                bestUCBValue = UCBValue;
-                bestChild = child;
-            }
-            //Debug.Log(UCBValue);
-        }
-        //Debug.Log(bestChild.move.y1 + " " + bestChild.move.x1 + " " + bestChild.move.y2 + " " + bestChild.move.x2);
-        //Debug.Log("  ");
-
-        return bestChild;
-    }
-
-    private void ExpandNode(TreeNode node)
-    {
-        //Debug.Log(node.move.y2 + " " + node.move.x2);
-        foreach (Move move in CheckCells(node))
-        {
-            TreeNode childNode = new TreeNode(node, move, node.player, node.miniFields);
-            node.children.Add(childNode);
-        }
-        //Debug.Log("Число доступных ходов - " + CheckCells(node).Count);
-    }
-    private List<Move> CheckCells(TreeNode node)
-    {
-        var field = node.miniFields;
-        List<Move> moves = new List<Move>();
-        if (field[node.move.y2, node.move.x2].state == 0)
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                for (int j = 0; j < 3; j++)
+                if (child.visits != 0)
                 {
-                    if (field[node.move.y2, node.move.x2].field[i, j].state == 0)
+                    if (child.wins / child.visits > node.wins / node.visits)
                     {
-                        Move move = new Move(node.move.x2, node.move.y2, j, i);
-                        moves.Add(move);
-                        //Debug.Log(move.y1 + " " + move.x1 + " " + move.y2 + " " + move.x2);
+                        node = child;
                     }
                 }
-            }
-        }
-        else
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                for (int j = 0; j < 3; j++)
+                else
                 {
-                    if (field[i, j].state == 0)
+                    if (node.visits != 0)
                     {
-                        for (int k = 0; k < 3; k++)
+                        if (node.wins / node.visits < 0.5)
                         {
-                            for (int l = 0; l < 3; l++)
-                            {
-                                if (field[i, j].field[k, l].state == 0)
-                                {
-                                    Move move = new Move(j, i, l, k);
-                                    moves.Add(move);
-                                }
-                            }
+                            node = child;
                         }
                     }
                 }
             }
         }
-        return moves;
+        return node;
     }
+    private void Expansion(TreeNode node)
+    {
 
-    private int SimulateGame(TreeNode node)
+        foreach (Move move in CheckCells(node))
+        {
+            TreeNode childNode = new TreeNode(node, move, (node.player + 1) % 2, node.miniFields);
+            CopyField(node.miniFields);
+            controller.SimStepProcessing(move.y1, move.x1, move.y2, move.x2, node.player);
+            childNode.miniFields = field.SimulationField;
+            node.children.Add(childNode);
+        }
+
+    }
+    private int Simulation(TreeNode node)
     {
         CopyField(node.miniFields);
         int currentPlayer = node.player;
@@ -134,11 +83,9 @@ public class MonteCarloTreeSearch : MonoBehaviour
             controller.SimStepProcessing(randomMove.y1, randomMove.x1, randomMove.y2, randomMove.x2, node.player);
             currentPlayer = (currentPlayer + 1) % 2;
         }
-        //Debug.Log("Отыграно!");
         return (field.SimResult - 1);
     }
-
-    private void Backpropagate(TreeNode node, int result) 
+    private void Backpropagation(TreeNode node, int result)
     {
         while (node != null)
         {
@@ -147,7 +94,6 @@ public class MonteCarloTreeSearch : MonoBehaviour
             node = node.parent;
         }
     }
-
     private TreeNode GetBestChild(TreeNode node)
     {
         double bestScore = double.MinValue;
@@ -161,12 +107,70 @@ public class MonteCarloTreeSearch : MonoBehaviour
                 bestChild = child;
             }
         }
-        //Debug.Log(bestScore);
-        //Debug.Log(bestChild.move.y2 + " " + bestChild.move.x2);
         return bestChild;
     }
 
-
+    private List<Move> CheckCells(TreeNode node)
+    {
+        if (node == null) Debug.Log("NUL");
+        var fields = node.miniFields;
+        List<Move> moves = new List<Move>();
+        if (fields[node.move.y2, node.move.x2].state == 0)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (fields[node.move.y2, node.move.x2].field[i, j].state == 0)
+                    {
+                        Move move = new Move(node.move.x2, node.move.y2, j, i);
+                        moves.Add(move);
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (fields[i, j].state == 0)
+                    {
+                        for (int k = 0; k < 3; k++)
+                        {
+                            for (int l = 0; l < 3; l++)
+                            {
+                                if (fields[i, j].field[k, l].state == 0)
+                                {
+                                    Move move = new Move(j, i, l, k);
+                                    moves.Add(move);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return moves;
+    }
+    private void CopyField(MiniField[,] miniFields)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                field.SimulationField[i, j].state = miniFields[i, j].state;
+                for (int k = 0; k < 3; k++)
+                {
+                    for (int l = 0; l < 3; l++)
+                    {
+                        field.SimulationField[i, j].field[k, l].state = miniFields[i, j].field[k, l].state;
+                    }
+                }
+            }
+        }
+    }
     public class TreeNode
     {
         public TreeNode parent;
@@ -187,24 +191,5 @@ public class MonteCarloTreeSearch : MonoBehaviour
             this.miniFields = miniFields;
         }
     }
-    private void CopyField(MiniField[,] miniFields)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-            {
-                field.SimulationField[i, j].state = miniFields[i, j].state;
-                for (int k = 0; k < 3; k++)
-                {
-                    for (int l = 0; l < 3; l++)
-                    {
-                        field.SimulationField[i, j].field[k, l].state = miniFields[i, j].field[k, l].state;
-                    }
-                }
-            }
-        }
-    }
-
-
 }
 

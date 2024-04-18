@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEngine;
 using static StepsController;
 using static CreateField;
+using Unity.VisualScripting;
 
 public class MonteCarloTreeSearch : MonoBehaviour
 {
@@ -12,15 +13,13 @@ public class MonteCarloTreeSearch : MonoBehaviour
     [SerializeField] private StepsController controller;
     [SerializeField] private WinChecker winChecker;
 
-
     public Move GetBestMove(Move move, int player)
     {
-        float startTime = Time.time;
         MiniField[,] root = field.BigField; 
         TreeNode rootNode = new TreeNode(null, move, player, NewField(root), 0);
         int n = 0;
         int wins = 0;
-        while (startTime - Time.time < 5 && n < 10000)
+        while (n < 50000)
         {
             n++;
             TreeNode node = Selection(rootNode);
@@ -30,6 +29,7 @@ public class MonteCarloTreeSearch : MonoBehaviour
             Backpropagation(node, result);
         }
         Debug.Log(wins);
+        
 
         return GetBestChild(rootNode).move;
     }
@@ -37,16 +37,24 @@ public class MonteCarloTreeSearch : MonoBehaviour
         TreeNode bestNode = node;
         while (node.children.Count > 0)
         {
-            double C = 0.4; // Параметр исследования
+            double C = Math.Sqrt(2); // Параметр исследования
             double bestUCB1 = 0;
             bestNode = node.children[0];
             foreach (TreeNode child in node.children)
             {
-                double UCB1 = (double)child.wins / child.visits + C * Math.Sqrt(Math.Log(node.visits) / child.visits);
-                if (UCB1 > bestUCB1)
+                if (child.visits > 0)
                 {
-                    bestUCB1 = UCB1;
+                    double UCB1 = (double)child.wins / child.visits + C * Math.Sqrt(Math.Log(node.visits) / child.visits);
+                    if (UCB1 > bestUCB1)
+                    {
+                        bestUCB1 = UCB1;
+                        bestNode = child;
+                    }
+                }
+                if(child.visits == 0)
+                {
                     bestNode = child;
+                    break;
                 }
             }
             node = bestNode;
@@ -60,6 +68,7 @@ public class MonteCarloTreeSearch : MonoBehaviour
         {
             TreeNode childNode = new TreeNode(node, move, (node.player + 1) % 2, NewField(node.miniFields), 0);
             SimToMini(node.miniFields);
+            field.SimResult = 0;
             controller.SimStepProcessing(move.y1, move.x1, move.y2, move.x2, node.player);
             if(field.SimResult != 0) childNode.result = field.SimResult;
             MiniToSim(childNode.miniFields);
@@ -77,7 +86,7 @@ public class MonteCarloTreeSearch : MonoBehaviour
         while (field.SimResult == 0)
         {
             Move randomMove = controller.legalMovesCopy[UnityEngine.Random.Range(0, controller.legalMovesCopy.Count)];
-            controller.SimStepProcessing(randomMove.y1, randomMove.x1, randomMove.y2, randomMove.x2, node.player);
+            controller.SimStepProcessing(randomMove.y1, randomMove.x1, randomMove.y2, randomMove.x2, currentPlayer);
             currentPlayer = (currentPlayer + 1) % 2;
         }
         if (field.SimResult != 3)
@@ -86,7 +95,7 @@ public class MonteCarloTreeSearch : MonoBehaviour
         }
         else
         {
-            return (1);
+            return (0);
         }
     }
     private void Backpropagation(TreeNode node, int result)
@@ -104,15 +113,18 @@ public class MonteCarloTreeSearch : MonoBehaviour
         TreeNode bestChild = null;
         foreach (TreeNode child in node.children)
         {
-            if (child.visits == 0) child.visits = 1;
-            double score = child.wins / (double)child.visits;
-            if (score > bestScore)
+            if (child.visits != 0)
             {
-                bestScore = score;
-                bestChild = child;
+                double score = child.wins / (double)child.visits;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestChild = child;
+                }
             }
-            Debug.Log(child.visits + " " + child.wins);
+            //Debug.Log(child.visits + " " + child.wins);
         }
+        Debug.Log("Вероятность победы - " + Math.Floor(bestChild.wins / (double)bestChild.visits * 100) + "%");
         return bestChild;
     }
 

@@ -17,65 +17,62 @@ public class MonteCarloTreeSearch : MonoBehaviour
     {
         float startTime = Time.time;
         MiniField[,] root = field.BigField; 
-        TreeNode rootNode = new TreeNode(null, move, player, root);
+        TreeNode rootNode = new TreeNode(null, move, player, NewField(root), 0);
         int n = 0;
-        while (startTime - Time.time < 5 && n < 100)
+        int wins = 0;
+        while (startTime - Time.time < 5 && n < 10000)
         {
             n++;
             TreeNode node = Selection(rootNode);
             Expansion(node);
             int result = Simulation(node);
+            if (result == 1) wins++;
             Backpropagation(node, result);
         }
+        Debug.Log(wins);
 
         return GetBestChild(rootNode).move;
     }
     private TreeNode Selection(TreeNode node) {
-
+        TreeNode bestNode = node;
         while (node.children.Count > 0)
         {
-            node = node.children[0];
+            double C = 0.4; // Параметр исследования
+            double bestUCB1 = 0;
+            bestNode = node.children[0];
             foreach (TreeNode child in node.children)
             {
-                if (child.visits != 0)
+                double UCB1 = (double)child.wins / child.visits + C * Math.Sqrt(Math.Log(node.visits) / child.visits);
+                if (UCB1 > bestUCB1)
                 {
-                    if (child.wins / child.visits > node.wins / node.visits)
-                    {
-                        node = child;
-                    }
-                }
-                else
-                {
-                    if (node.visits != 0)
-                    {
-                        if (node.wins / node.visits < 0.5)
-                        {
-                            node = child;
-                        }
-                    }
+                    bestUCB1 = UCB1;
+                    bestNode = child;
                 }
             }
+            node = bestNode;
         }
-        return node;
+        return bestNode;
     }
     private void Expansion(TreeNode node)
     {
 
         foreach (Move move in CheckCells(node))
         {
-            TreeNode childNode = new TreeNode(node, move, (node.player + 1) % 2, node.miniFields);
-            CopyField(node.miniFields);
+            TreeNode childNode = new TreeNode(node, move, (node.player + 1) % 2, NewField(node.miniFields), 0);
+            SimToMini(node.miniFields);
             controller.SimStepProcessing(move.y1, move.x1, move.y2, move.x2, node.player);
-            childNode.miniFields = field.SimulationField;
+            if(field.SimResult != 0) childNode.result = field.SimResult;
+            MiniToSim(childNode.miniFields);
             node.children.Add(childNode);
         }
 
     }
     private int Simulation(TreeNode node)
     {
-        CopyField(node.miniFields);
+        SimToMini(node.miniFields);
         int currentPlayer = node.player;
         field.SimResult = 0;
+        if(node.result != 0) field.SimResult = node.result;
         controller.CheckCells(node.move.y2, node.move.x2, 1);
         while (field.SimResult == 0)
         {
@@ -83,14 +80,21 @@ public class MonteCarloTreeSearch : MonoBehaviour
             controller.SimStepProcessing(randomMove.y1, randomMove.x1, randomMove.y2, randomMove.x2, node.player);
             currentPlayer = (currentPlayer + 1) % 2;
         }
-        return (field.SimResult - 1);
+        if (field.SimResult != 3)
+        {
+            return (field.SimResult - 1);
+        }
+        else
+        {
+            return (1);
+        }
     }
     private void Backpropagation(TreeNode node, int result)
     {
         while (node != null)
         {
             node.visits++;
-            node.wins += (node.player == (result + 1)) ? 1 : 0;
+            node.wins += result;
             node = node.parent;
         }
     }
@@ -100,12 +104,14 @@ public class MonteCarloTreeSearch : MonoBehaviour
         TreeNode bestChild = null;
         foreach (TreeNode child in node.children)
         {
+            if (child.visits == 0) child.visits = 1;
             double score = child.wins / (double)child.visits;
             if (score > bestScore)
             {
                 bestScore = score;
                 bestChild = child;
             }
+            Debug.Log(child.visits + " " + child.wins);
         }
         return bestChild;
     }
@@ -154,7 +160,60 @@ public class MonteCarloTreeSearch : MonoBehaviour
         }
         return moves;
     }
-    private void CopyField(MiniField[,] miniFields)
+    public class TreeNode
+    {
+        public TreeNode parent;
+        public Move move;
+        public int visits;
+        public int wins;
+        public List<TreeNode> children;
+        public int player;
+        public MiniField[,] miniFields;
+        public int result;
+        public TreeNode(TreeNode parent, Move move, int player, MiniField[,] miniFields, int result)
+        {
+            this.parent = parent;
+            this.move = move;
+            this.visits = 0;
+            this.wins = 0;
+            this.children = new List<TreeNode>();
+            this.player = player;
+            this.miniFields = miniFields;
+            this.result = result;
+        }
+    }
+    private void Draw(MiniField[,] miniFields)
+    {
+        for(int i = 0; i < 3; i++)
+        {
+            for(int j = 0; j < 3; j++)
+            {
+                for(int  k = 0; k < 3; k++)
+                {
+                    Debug.Log(miniFields[i, j].field[k, 0].state + " " + miniFields[i, j].field[k, 1].state + " " + miniFields[i, j].field[k, 2].state);
+                }
+                Debug.Log("");
+            }
+        }
+    }
+    private void MiniToSim(MiniField[,] miniFields)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                miniFields[i, j].state = field.SimulationField[i, j].state;
+                for (int k = 0; k < 3; k++)
+                {
+                    for (int l = 0; l < 3; l++)
+                    {
+                        miniFields[i, j].field[k, l].state = field.SimulationField[i, j].field[k, l].state;
+                    }
+                }
+            }
+        }
+    }
+    private void SimToMini(MiniField[,] miniFields)
     {
         for (int i = 0; i < 3; i++)
         {
@@ -171,25 +230,25 @@ public class MonteCarloTreeSearch : MonoBehaviour
             }
         }
     }
-    public class TreeNode
+    private MiniField[,] NewField(MiniField[,] miniFields)
     {
-        public TreeNode parent;
-        public Move move;
-        public int visits;
-        public int wins;
-        public List<TreeNode> children;
-        public int player;
-        public MiniField[,] miniFields;
-        public TreeNode(TreeNode parent, Move move, int player, MiniField[,] miniFields)
+        MiniField[,] newField = new MiniField[3,3];
+        for (int i = 0; i < 3; i++)
         {
-            this.parent = parent;
-            this.move = move;
-            this.visits = 0;
-            this.wins = 0;
-            this.children = new List<TreeNode>();
-            this.player = player;
-            this.miniFields = miniFields;
+            for (int j = 0; j < 3; j++)
+            {
+                newField[i, j] = new MiniField(new Cell[3, 3], miniFields[i, j].state);
+                for (int k = 0; k < 3; k++)
+                {
+                    for (int l = 0; l < 3; l++)
+                    {
+                        newField[i, j].field[k, l] = new Cell(miniFields[i, j].field[k, l].state, null);
+                    }
+                }
+            }
         }
+        return newField;
     }
+
 }
 

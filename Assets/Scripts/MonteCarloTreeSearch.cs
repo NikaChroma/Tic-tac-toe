@@ -89,13 +89,20 @@ public class MonteCarloTreeSearch : MonoBehaviour
             controller.SimStepProcessing(randomMove.y1, randomMove.x1, randomMove.y2, randomMove.x2, currentPlayer);
             currentPlayer = (currentPlayer + 1) % 2;
         }
-        if (field.SimResult != 3)
+        if (field.SimResult == 3)
         {
-            return (field.SimResult - 1);
+            return (1);
         }
         else
         {
-            return (0);
+            if(field.SimResult - 1 == node.player)
+            {
+                return 0;
+            }
+            else
+            {
+                return 1;
+            }
         }
     }
     private void Backpropagation(TreeNode node, int result)
@@ -103,7 +110,7 @@ public class MonteCarloTreeSearch : MonoBehaviour
         while (node != null)
         {
             node.visits++;
-            node.wins += result;
+            if(node.player == result) node.wins++;
             node = node.parent;
         }
     }
